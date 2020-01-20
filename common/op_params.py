@@ -27,13 +27,14 @@ def read_params(params_file, default_params):
 class opParams:
   def __init__(self):
     self.default_params = {'camera_offset': {'default': 0.06, 'allowed_types': [float, int], 'description': 'Your camera offset to use in lane_planner.py', 'live': True},  # float and int is important
-                           'non_live_param': {'default': True, 'allowed_types': [bool], 'description': 'Default, allowed types and live parameter should be given for new params.', 'live': False}}
+                           'long_P': {'default': 0.5, 'allowed_types': [float, int], 'description': '', 'live': True},
+                           'long_I': {'default': 0.12, 'allowed_types': [float, int], 'description': '', 'live': True}}
 
     self.params = {}
     self.params_file = "/data/op_params.json"
     self.kegman_file = "/data/kegman.json"
     self.last_read_time = time.time()
-    self.read_frequency = 5.0  # max frequency to read with self.get(...) (sec)  # TODO: change to your desired frequency
+    self.read_frequency = 5.0  # max frequency to read with self.get(...) (sec)  # TODO: change to your desired frequency!!
     self.force_update = False  # replaces values with default params if True, not just add add missing key/value pairs
     self.to_delete = ['dynamic_lane_speed']
     self.run_init()  # restores, reads, and updates params

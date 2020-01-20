@@ -29,14 +29,6 @@ class PIController():
 
     self.reset()
 
-  @property
-  def k_p(self):
-    return interp(self.speed, self._k_p[0], self._k_p[1])
-
-  @property
-  def k_i(self):
-    return interp(self.speed, self._k_i[0], self._k_i[1])
-
   def _check_saturation(self, control, check_saturation, error):
     saturated = (control < self.neg_limit) or (control > self.pos_limit)
 
@@ -58,6 +50,8 @@ class PIController():
     self.control = 0
 
   def update(self, setpoint, measurement, speed=0.0, check_saturation=True, override=False, feedforward=0., deadzone=0., freeze_integrator=False):
+    self.k_p = self.op_params.get('long_P', default=0.5)  # gets the prop gain every iteration (max once every 5 seconds, change in op_params.py)
+    self.k_i = self.op_params.get('long_I', default=0.12)
     self.speed = speed
 
     error = float(apply_deadzone(setpoint - measurement, deadzone))
