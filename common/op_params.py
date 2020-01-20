@@ -28,7 +28,8 @@ class opParams:
   def __init__(self):
     self.default_params = {'camera_offset': {'default': 0.06, 'allowed_types': [float, int], 'description': 'Your camera offset to use in lane_planner.py', 'live': True},  # float and int is important
                            'long_P': {'default': 0.5, 'allowed_types': [float, int], 'description': '', 'live': True},
-                           'long_I': {'default': 0.12, 'allowed_types': [float, int], 'description': '', 'live': True}}
+                           'long_I': {'default': 0.12, 'allowed_types': [float, int], 'description': '', 'live': True},
+                           'steer_ratio': {'default': 13., 'allowed_types': [float, int], 'description': '', 'live': True}}
 
     self.params = {}
     self.params_file = "/data/op_params.json"

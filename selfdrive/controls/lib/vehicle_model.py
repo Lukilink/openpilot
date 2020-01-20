@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 from numpy.linalg import solve
+from common.op_params import opParams
 
 """
 Dynamic bycicle model from "The Science of Vehicle Dynamics (2014), M. Guiggiani"
@@ -103,9 +104,10 @@ class VehicleModel():
     self.aF = CP.centerToFront
     self.aR = CP.wheelbase - CP.centerToFront
     self.chi = CP.steerRatioRear
-    self.sR = CP.steerRatio
+    self.sR = CP.steerRatio  # looks good
     self.cF_orig = CP.tireStiffnessFront
     self.cR_orig = CP.tireStiffnessRear
+    self.op_params = opParams()
     
     self.update_params(1.0, CP.steerRatio)
 
@@ -113,6 +115,7 @@ class VehicleModel():
     """Update the vehicle model with a new stiffness factor and steer ratio"""
     self.cF = stiffness_factor * self.cF_orig
     self.cR = stiffness_factor * self.cR_orig
+    self.sR = self.op_params.get('steer_ratio', default=13.)
 
   def steady_state_sol(self, sa, u):
     """Returns the steady state solution.
