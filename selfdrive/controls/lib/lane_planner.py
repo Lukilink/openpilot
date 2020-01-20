@@ -1,8 +1,9 @@
 from common.numpy_fast import interp
 import numpy as np
 from cereal import log
+from common.op_params import opParams
 
-CAMERA_OFFSET = 0.00  # m from center car to camera
+# CAMERA_OFFSET = 0.00  # m from center car to camera
 
 def mean(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
@@ -74,6 +75,7 @@ class LanePlanner():
 
   def update_d_poly(self, v_ego):
     # only offset left and right lane lines; offsetting p_poly does not make sense
+    CAMERA_OFFSET = opParams().get('camera_offset', default=0.0)  # updates live
     self.l_poly[3] += CAMERA_OFFSET
     self.r_poly[3] += CAMERA_OFFSET
 
