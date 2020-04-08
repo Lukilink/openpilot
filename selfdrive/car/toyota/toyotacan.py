@@ -81,6 +81,7 @@ def create_lead_command(packer, lead_rel_speed, lead_distance):
   values = {
     "LEAD_RELSPEED": lead_rel_speed,
     "LEAD_LONG_DIST": lead_distance,
+    "CHECKSUM": 0x00,
   }
   return packer.make_can_msg("LEAD_INFO", 0, values)
 
