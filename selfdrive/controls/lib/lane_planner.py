@@ -89,6 +89,8 @@ class LanePlanner():
     # Find current lanewidth
     self.lane_width_certainty += 0.05 * (self.l_prob * self.r_prob - self.lane_width_certainty)
     current_lane_width = abs(self.l_poly[3] - self.r_poly[3])
+    if v_ego < 50.0 / 3.6 and current_lane_width > 4.0:
+      self.l_poly[3] += current_lane_width/2
     self.lane_width_estimate += 0.005 * (current_lane_width - self.lane_width_estimate)
     speed_lane_width = interp(v_ego, [0., 31.], [2.8, 3.5])
     self.lane_width = self.lane_width_certainty * self.lane_width_estimate + \
