@@ -1,1 +1,1 @@
-#define COMMA_VERSION "0.8.1 kegman "
+#define COMMA_VERSION "0.8.1_kegman "
