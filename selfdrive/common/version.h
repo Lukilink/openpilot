@@ -1,1 +1,1 @@
-#define COMMA_VERSION "0.8.1-80393615-2020-12-18T10:57:03"
+#define COMMA_VERSION "0.8.1 kegman "
