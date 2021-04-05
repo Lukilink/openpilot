@@ -39,8 +39,8 @@ class CarInterface(CarInterfaceBase):
       # Default longitudinal tune
       ret.longitudinalTuning.deadzoneBP = [0., 9.]
       ret.longitudinalTuning.deadzoneV = [0., .15]
-      ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kiBP = [0., 35.]
+      ret.longitudinalTuning.kpBP = [0., 14., 25.] #0kmh,50kmh,90kmh
+      ret.longitudinalTuning.kiBP = [0., 14.]
       ret.longitudinalTuning.kpV = [3.6, 2.4, 1.5]
       ret.longitudinalTuning.kiV = [0.54, 0.36]
 
@@ -343,9 +343,9 @@ class CarInterface(CarInterfaceBase):
 
     if ret.enableGasInterceptor:
       ret.gasMaxBP = [0., 9., 35]
-      ret.gasMaxV = [0.2, 0.5, 0.7]
-      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
-      ret.longitudinalTuning.kiV = [0.18, 0.12]
+      ret.gasMaxV = [0.05, 0.1, 0.7]
+      ret.longitudinalTuning.kpV = [0.1, 0.2, 0.5]
+      ret.longitudinalTuning.kiV = [0.01, 0.01]
 
     return ret
 
@@ -357,7 +357,7 @@ class CarInterface(CarInterfaceBase):
 
     ret = self.CS.update(self.cp, self.cp_cam)
 
-    ret.canValid = self.cp.can_valid and self.cp_cam.can_valid
+    ret.canValid = True #self.cp.can_valid and self.cp_cam.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
     # events
