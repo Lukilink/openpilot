@@ -9,6 +9,7 @@ from common.realtime import sec_since_boot
 from selfdrive.hardware import HARDWARE
 from selfdrive.swaglog import cloudlog
 
+PANDA_OUTPUT_VOLTAGE = 5.28
 CAR_VOLTAGE_LOW_PASS_K = 0.091 # LPF gain for 5s tau (dt/tau / (dt/tau + 1))
 
 # A C2 uses about 1W while idling, and 30h seens like a good shutoff for most cars
@@ -167,6 +168,10 @@ class PowerMonitoring:
     disable_charging &= (self.params.get("DisablePowerDown") != b"1")
     disable_charging |= (self.params.get("ForcePowerDown") == b"1")
     return disable_charging
+  
+  def panda_current_to_actual_current(panda_current):
+   # From white/grey panda schematic
+   return (3.3 - (panda_current * 3.3 / 4096)) / 8.25
 
   # See if we need to shutdown
   def should_shutdown(self, pandaState, offroad_timestamp, started_seen):
