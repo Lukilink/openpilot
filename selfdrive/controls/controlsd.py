@@ -138,7 +138,7 @@ class Controls:
     self.sm['driverMonitoringState'].faceDetected = False
     self.sm['liveParameters'].valid = True
 
-    self.startup_event = get_startup_event(car_recognized, controller_available)
+    self.startup_event = get_startup_event(car_recognized, controller_available, hw_type)
 
     if not sounds_available:
       self.events.add(EventName.soundsUnavailable, static=True)
