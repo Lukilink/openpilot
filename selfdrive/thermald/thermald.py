@@ -204,8 +204,6 @@ def thermald_thread():
         no_panda_cnt = 0
         startup_conditions["ignition"] = pandaState.pandaState.ignitionLine or pandaState.pandaState.ignitionCan
 
-      startup_conditions["hardware_supported"] = health is not None
-      set_offroad_alert_if_changed("Offroad_HardwareUnsupported", not startup_conditions["hardware_supported"])
 
       # Setup fan handler on first connect to panda
       if handle_fan is None and pandaState.pandaState.pandaType != log.PandaState.PandaType.unknown:
@@ -267,7 +265,7 @@ def thermald_thread():
     # since going onroad increases load and can make temps go over 107
     # We only do this if there is a relay that prevents the car from faulting
     is_offroad_for_5_min = (started_ts is None) and ((not started_seen) or (off_ts is None) or (sec_since_boot() - off_ts > 60 * 5))
-    if max_cpu_temp > 107. or bat_temp >= 63. or (is_offroad_for_5_min and max_cpu_temp > 70.0):
+    if max_cpu_temp > 107. or bat_temp >= 63. or (has_relay and is_offroad_for_5_min and max_cpu_temp > 70.0):
       # onroad not allowed
       thermal_status = ThermalStatus.danger
     elif max_comp_temp > 96.0 or bat_temp > 60.:
@@ -291,7 +289,7 @@ def thermald_thread():
     now = datetime.datetime.utcnow()
 
     # show invalid date/time alert
-    startup_conditions["time_valid"] = (now.year > 2020) or (now.year == 2020 and now.month >= 10)
+    startup_conditions["time_valid"] = now.year >= 2019
     set_offroad_alert_if_changed("Offroad_InvalidTime", (not startup_conditions["time_valid"]))
 
     # Show update prompt
@@ -331,6 +329,7 @@ def thermald_thread():
     startup_conditions["up_to_date"] = params.get("Offroad_ConnectivityNeeded") is None or params.get("DisableUpdates") == b"1"
     startup_conditions["not_uninstalling"] = not params.get("DoUninstall") == b"1"
     startup_conditions["accepted_terms"] = params.get("HasAcceptedTerms") == terms_version
+    completed_training = params.get("CompletedTrainingVersion") == training_version
 
     panda_signature = params.get("PandaFirmware")
     startup_conditions["fw_version_match"] = (panda_signature is None) or (panda_signature == FW_SIGNATURE)   # don't show alert is no panda is connected (None)
@@ -338,8 +337,7 @@ def thermald_thread():
 
     # with 2% left, we killall, otherwise the phone will take a long time to boot
     startup_conditions["free_space"] = msg.deviceState.freeSpacePercent > 2
-    startup_conditions["completed_training"] = params.get("CompletedTrainingVersion") == training_version or \
-                                               (current_branch in ['dashcam', 'dashcam-staging'])
+    startup_conditions["completed_training"] = completed_training or (current_branch in ['dashcam', 'dashcam-staging'])
     startup_conditions["not_driver_view"] = not params.get("IsDriverViewEnabled") == b"1"
     startup_conditions["not_taking_snapshot"] = not params.get("IsTakingSnapshot") == b"1"
     # if any CPU gets above 107 or the battery gets above 63, kill all processes
@@ -359,6 +357,7 @@ def thermald_thread():
       if started_ts is None:
         started_ts = sec_since_boot()
         started_seen = True
+        os.system('echo performance > /sys/class/devfreq/soc:qcom,cpubw/governor')
     else:
       if startup_conditions["ignition"] and (startup_conditions != startup_conditions_prev):
         cloudlog.event("Startup blocked", startup_conditions=startup_conditions)
@@ -371,6 +370,7 @@ def thermald_thread():
       started_ts = None
       if off_ts is None:
         off_ts = sec_since_boot()
+        os.system('echo powersave > /sys/class/devfreq/soc:qcom,cpubw/governor')
 
     # Offroad power monitoring
     power_monitor.calculate(pandaState)
