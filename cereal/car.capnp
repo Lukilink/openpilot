@@ -116,6 +116,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     invalidGiraffeToyotaDEPRECATED @60;
     internetConnectivityNeededDEPRECATED @61;
     whitePandaUnsupportedDEPRECATED @81;
+    startupGreyPanda @82;
     commIssueWarningDEPRECATED @83;
     focusRecoverActiveDEPRECATED @86;
     neosUpdateRequiredDEPRECATED @88;
