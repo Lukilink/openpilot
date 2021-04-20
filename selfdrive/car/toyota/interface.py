@@ -68,8 +68,8 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.3
       
     elif candidate == CAR.OLD_CAR:
-      stop_and_go = False
-      ret.safetyParam = 100
+      stop_and_go = True
+      ret.safetyParam = 88
       ret.wheelbase = 2.455
       ret.steerRatio = 14.5
       tire_stiffness_factor = 0.444  # not optimized yet
