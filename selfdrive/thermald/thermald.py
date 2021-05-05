@@ -344,7 +344,10 @@ def thermald_thread():
     # controls will warn with CPU above 95 or battery above 60
     startup_conditions["device_temp_good"] = thermal_status < ThermalStatus.danger
     set_offroad_alert_if_changed("Offroad_TemperatureTooHigh", (not startup_conditions["device_temp_good"]))
-
+    
+    startup_conditions["hardware_supported"] = pandaState is not None
+    set_offroad_alert_if_changed("Offroad_HardwareUnsupported", pandaState is not None and not startup_conditions["hardware_supported"])
+    
     # Handle offroad/onroad transition
     should_start = all(startup_conditions.values())
     if should_start:
