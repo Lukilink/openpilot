@@ -1,1 +1,1 @@
-#define COMMA_VERSION "0.8.4-a7b3df5df-2021-05-15T01:20:46"
+#define COMMA_VERSION "0.8.4"
