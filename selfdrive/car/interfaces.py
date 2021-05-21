@@ -44,7 +44,7 @@ class CarInterfaceBase():
     return 1.
 
   @staticmethod
-  def compute_gb(accel, speed):
+  def get_params(candidate, fingerprint=gen_empty_fingerprint(), has_relay=False, car_fw=None):
     raise NotImplementedError
 
   @staticmethod
@@ -53,9 +53,10 @@ class CarInterfaceBase():
 
   # returns a set of default params to avoid repetition in car specific params
   @staticmethod
-  def get_std_params(candidate, fingerprint):
+  def get_std_params(candidate, fingerprint, has_relay):
     ret = car.CarParams.new_message()
     ret.carFingerprint = candidate
+    ret.isPandaBlackDEPRECATED = has_relay
 
     # standard ALC params
     ret.steerControlType = car.CarParams.SteerControlType.torque
