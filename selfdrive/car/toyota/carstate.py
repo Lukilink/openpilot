@@ -57,7 +57,7 @@ class CarState(CarStateBase):
           self.needs_angle_offset = False
           self.angle_offset = ret.steeringAngleDeg - angle_wheel
     else:
-      ret.steeringAngleDeg = cp.vl["STEER_ANGLE_SENSOR"]['STEER_ANGLE'] + cp.vl["STEER_ANGLE_SENSOR"]['STEER_FRACTION']
+      ret.steeringAngle = -((cp.vl["STEER_ANGLE_SENSOR"]['STEER_ANGLE'] + cp.vl["STEER_ANGLE_SENSOR"]['STEER_FRACTION'])+23)
 
     ret.steeringRateDeg = cp.vl["STEER_ANGLE_SENSOR"]['STEER_RATE']
 
