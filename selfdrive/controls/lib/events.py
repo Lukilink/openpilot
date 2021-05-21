@@ -267,7 +267,15 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
   EventName.startupFuzzyFingerprint: {
     ET.PERMANENT: startup_fuzzy_fingerprint_alert,
   },
-
+  
+  EventName.invalidGiraffeToyotaDEPRECATED: {
+     ET.PERMANENT: Alert(
+       "Unsupported Giraffe Configuration",
+       "Visit comma.ai/tg",
+       AlertStatus.normal, AlertSize.mid,
+       Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., .2),
+   },
+  
   EventName.dashcamMode: {
     ET.PERMANENT: Alert(
       "Dashcam Mode",
