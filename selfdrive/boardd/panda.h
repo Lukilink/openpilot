@@ -40,6 +40,7 @@ struct __attribute__((packed)) health_t {
   uint8_t power_save_enabled;
 };
 
+void panda_set_power(bool power);
 
 class Panda {
  private:
