@@ -38,8 +38,8 @@ Panda::Panda(){
 
   hw_type = get_hw_type();
 
-  assert((hw_type != cereal::PandaState::PandaType::WHITE_PANDA) &&
-         (hw_type != cereal::PandaState::PandaType::GREY_PANDA));
+//  assert((hw_type != cereal::PandaState::PandaType::WHITE_PANDA) &&
+//         (hw_type != cereal::PandaState::PandaType::GREY_PANDA));
 
   has_rtc = (hw_type == cereal::PandaState::PandaType::UNO) ||
             (hw_type == cereal::PandaState::PandaType::DOS);
