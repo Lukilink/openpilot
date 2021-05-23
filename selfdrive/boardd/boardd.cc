@@ -566,6 +566,8 @@ int main() {
 
   err = set_core_affinity(Hardware::TICI() ? 4 : 3);
   LOG("set affinity returns %d", err);
+  
+  panda_set_power(true);
 
   while (!do_exit){
     std::vector<std::thread> threads;
