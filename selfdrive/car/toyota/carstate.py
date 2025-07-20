@@ -329,6 +329,8 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_cam_can_parser(CP, FPCP):
+    if CP.carFingerprint == CAR.TOYOTA_COROLLA:
+      return []
     messages = []
 
     messages += [
