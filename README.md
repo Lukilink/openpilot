@@ -13,7 +13,7 @@ What is openpilot?
   </tr>
 </table>
 
-What is FrogPilot? 🐸
+What is LUKIPilot? 🐸
 ------
 
 FrogPilot is a fully open-sourced fork of openpilot, featuring clear and concise commits striving to be a resource for the openpilot developer community. It thrives on contributions from both users and developers, focusing on a collaborative, community-led approach to deliver an advanced openpilot experience for everyone!
