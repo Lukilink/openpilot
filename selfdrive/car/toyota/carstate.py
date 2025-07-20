@@ -331,26 +331,26 @@ class CarState(CarStateBase):
   def get_cam_can_parser(CP, FPCP):
     messages = []
 
-#    messages += [
-#      ("RSA1", 0),
-#      ("RSA2", 0),
-#    ]
+    messages += [
+      ("RSA1", 0),
+      ("RSA2", 0),
+    ]
 
-#    if CP.carFingerprint != CAR.TOYOTA_PRIUS_V:
-#      messages += [
-#        ("LKAS_HUD", 1),
-#      ]
+    if CP.carFingerprint != CAR.TOYOTA_PRIUS_V:
+      messages += [
+        ("LKAS_HUD", 1),
+      ]
 
-#    if CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR):
-#      messages += [
-#        ("ACC_CONTROL", 33),
-#        ("PCS_HUD", 1),
-#      ]
-#
-#      # TODO: Figure out new layout of the PRE_COLLISION message
-#      if not CP.flags & ToyotaFlags.SECOC.value:
-#        messages += [
-#          ("PRE_COLLISION", 33),
-#        ]
+    if CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR):
+      messages += [
+        ("ACC_CONTROL", 33),
+        ("PCS_HUD", 1),
+      ]
+
+      # TODO: Figure out new layout of the PRE_COLLISION message
+      if not CP.flags & ToyotaFlags.SECOC.value:
+        messages += [
+          ("PRE_COLLISION", 33),
+        ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)
