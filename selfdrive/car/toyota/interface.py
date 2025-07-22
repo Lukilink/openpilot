@@ -159,6 +159,7 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c, frogpilot_toggles):
     ret, fp_ret = self.CS.update(self.cp, self.cp_cam, c, frogpilot_toggles)
+    ret.canValid = True #self.cp.can_valid and self.cp_cam.can_valid
 
     if self.CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR) or (self.CP.flags & ToyotaFlags.SMART_DSU and not self.CP.flags & ToyotaFlags.RADAR_CAN_FILTER):
       ret.buttonEvents = [
