@@ -1,4 +1,4 @@
-Version 0.9.8 (2025-02-27)
+Version 0.9.8 (2025-02-27) (HArdCode COROLLA)
 ========================
 * New driving monitoring model
   * Reduced false positives related to passengers
