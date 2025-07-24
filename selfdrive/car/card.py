@@ -213,7 +213,7 @@ class Car:
 
     # kick off controlsd step while we actuate the latest carControl packet
     cs_send = messaging.new_message('carState')
-    cs_send.valid = CS.canValid
+    cs_send.valid = True #CS.canValid
     cs_send.carState = CS
     cs_send.carState.canErrorCounter = self.can_rcv_cum_timeout_counter
     cs_send.carState.cumLagMs = -self.rk.remaining * 1000.
