@@ -11,3 +11,4 @@ if [ -z "$AGNOS_VERSION" ]; then
 fi
 
 export STAGING_ROOT="/data/safe_staging"
+export FINGERPRINT="TOYOTA COROLLA 2017"
