@@ -106,7 +106,7 @@ class CarState(CarStateBase):
     ret.gas = 0.
     ret.gasPressed = False
     ret.engineRpm = 0
-    ret.gearShifter = True
+    ret.gearShifter = 1
     ret.leftBlindspot = False
     ret.rightBlindspot = False
     ret.buttonEvents = []
