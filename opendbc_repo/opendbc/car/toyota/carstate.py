@@ -97,6 +97,7 @@ class CarState(CarStateBase):
       ret.steerFaultPermanent = ret.steerFaultPermanent or cp.vl["EPS_STATUS"]["LTA_STATE"] in PERM_STEER_FAULTS
       ret.vehicleSensorsInvalid = not self.accurate_steer_angle_seen
 
+
     # Nicht verwendete Felder explizit auf False oder None setzen
     ret.doorOpen = False
     ret.seatbeltUnlatched = False
@@ -106,7 +107,7 @@ class CarState(CarStateBase):
     ret.gas = 0.
     ret.gasPressed = False
     ret.engineRpm = 0
-    ret.gearShifter = D
+    ret.gearShifter = self.parse_gear_shifter(3(3, None))
     ret.leftBlindspot = False
     ret.rightBlindspot = False
     ret.buttonEvents = []
