@@ -25,7 +25,12 @@ class CarState(CarStateBase):
     self.cluster_speed_hyst_gap = CV.KPH_TO_MS / 2.
     self.cluster_min_speed = CV.KPH_TO_MS / 2.
 
-    # Gear-shifter wird nicht verwendet, da GEAR_PACKET entfernt wurde.
+    # Gear-shifter wieder CAN-basiert initialisieren (wie original)
+    if CP.flags & ToyotaFlags.SECOC.value:
+      self.shifter_values = can_define.dv["GEAR_PACKET_HYBRID"]["GEAR"]
+    else:
+      self.shifter_values = can_define.dv["GEAR_PACKET"]["GEAR"]
+
     self.accurate_steer_angle_seen = False
     self.angle_offset = FirstOrderFilter(None, 60.0, DT_CTRL, initialized=False)
     self.distance_button = 0
@@ -97,6 +102,12 @@ class CarState(CarStateBase):
       ret.steerFaultPermanent = ret.steerFaultPermanent or cp.vl["EPS_STATUS"]["LTA_STATE"] in PERM_STEER_FAULTS
       ret.vehicleSensorsInvalid = not self.accurate_steer_angle_seen
 
+    # Gear-shifter wieder CAN-basiert auslesen (wie original)
+    if self.CP.flags & ToyotaFlags.SECOC.value:
+      can_gear = int(cp.vl["GEAR_PACKET_HYBRID"]["GEAR"])
+    else:
+      can_gear = int(cp.vl["GEAR_PACKET"]["GEAR"])
+    ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
 
     # Nicht verwendete Felder explizit auf False oder None setzen
     ret.doorOpen = False
@@ -107,7 +118,6 @@ class CarState(CarStateBase):
     ret.gas = 0.
     ret.gasPressed = False
     ret.engineRpm = 0
-    ret.gearShifter = 33
     ret.leftBlindspot = False
     ret.rightBlindspot = False
     ret.buttonEvents = []
@@ -128,6 +138,8 @@ class CarState(CarStateBase):
         ("PCM_CRUISE", 33),
         ("STEER_TORQUE_SENSOR", 50),
         ("PCM_CRUISE_2", 33),
+        # GEAR_PACKET für Corolla hinzufügen!
+        ("GEAR_PACKET", 1),
       ]
       cam_messages = []
     else:
@@ -147,9 +159,12 @@ class CarState(CarStateBase):
         ("STEER_TORQUE_SENSOR", 50),
         ("VSC1S07", 20),
         ("ENGINE_RPM", 42),
-        ("GEAR_PACKET", 1),
+        ("GEAR_PACKET", 1), # <-- GEAR_PACKET für Nicht-Hybrid
         ("PCM_CRUISE_2", 33),
       ]
+      # GEAR_PACKET_HYBRID für SECOC/Fahrzeuge mit Hybrid-Getriebe
+      if CP.flags & ToyotaFlags.SECOC.value:
+        pt_messages.append(("GEAR_PACKET_HYBRID", 60))
       cam_messages = [("LKAS_HUD", 1)]
 
     ret = {Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0)}
