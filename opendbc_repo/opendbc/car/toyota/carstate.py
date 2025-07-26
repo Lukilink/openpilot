@@ -12,6 +12,7 @@ from opendbc.car.toyota.values import ToyotaFlags, CAR, DBC, STEER_THRESHOLD, NO
 
 ButtonType = structs.CarState.ButtonEvent.Type
 SteerControlType = structs.CarParams.SteerControlType
+GearShifter = car.CarState.GearShifter
 
 TEMP_STEER_FAULTS = (0, 9, 11, 21, 25)
 PERM_STEER_FAULTS = (3, 17)
@@ -107,7 +108,7 @@ class CarState(CarStateBase):
     ret.gas = 0.
     ret.gasPressed = False
     ret.engineRpm = 0
-    ret.gearShifter = self.parse_gear_shifter(3(3, None))
+    ret.gearShifter = GearShifter.drive
     ret.leftBlindspot = False
     ret.rightBlindspot = False
     ret.buttonEvents = []
