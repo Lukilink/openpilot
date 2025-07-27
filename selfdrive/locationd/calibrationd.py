@@ -41,8 +41,10 @@ PITCH_LIMITS = np.array([-0.09074112085129739, 0.17])
 YAW_LIMITS = np.array([-0.06912048084718224, 0.06912048084718235])
 DEBUG = os.getenv("DEBUG") is not None
 
+
 def is_calibration_valid(rpy: np.ndarray) -> bool:
-  return True  # Immer gültig
+  return (PITCH_LIMITS[0] < rpy[1] < PITCH_LIMITS[1]) and (YAW_LIMITS[0] < rpy[2] < YAW_LIMITS[1])  # type: ignore
+
 
 def sanity_clip(rpy: np.ndarray) -> np.ndarray:
   if np.isnan(rpy).any():
@@ -66,25 +68,24 @@ class Calibrator:
     rpy_init = RPY_INIT
     wide_from_device_euler = WIDE_FROM_DEVICE_EULER_INIT
     height = HEIGHT_INIT
-    valid_blocks = INPUTS_NEEDED  # Immer voll!
-    self.cal_status = log.LiveCalibrationData.Status.calibrated
+    valid_blocks = 0
+    self.cal_status = log.LiveCalibrationData.Status.uncalibrated
 
     if param_put and calibration_params:
       try:
         with log.Event.from_bytes(calibration_params) as msg:
           rpy_init = np.array(msg.liveCalibration.rpyCalib)
-          valid_blocks = INPUTS_NEEDED  # Immer voll!
+          valid_blocks = msg.liveCalibration.validBlocks
           wide_from_device_euler = np.array(msg.liveCalibration.wideFromDeviceEuler)
           height = np.array(msg.liveCalibration.height)
       except Exception:
         cloudlog.exception("Error reading cached CalibrationParams")
 
     self.reset(rpy_init, valid_blocks, wide_from_device_euler, height)
-    self.valid_blocks = INPUTS_NEEDED
     self.update_status()
 
   def reset(self, rpy_init: np.ndarray = RPY_INIT,
-                  valid_blocks: int = INPUTS_NEEDED,
+                  valid_blocks: int = 0,
                   wide_from_device_euler_init: np.ndarray = WIDE_FROM_DEVICE_EULER_INIT,
                   height_init: np.ndarray = HEIGHT_INIT,
                   smooth_from: np.ndarray = None) -> None:
@@ -103,7 +104,10 @@ class Calibrator:
     else:
       self.wide_from_device_euler = wide_from_device_euler_init.copy()
 
-    self.valid_blocks = INPUTS_NEEDED
+    if not np.isfinite(valid_blocks) or valid_blocks < 0:
+      self.valid_blocks = 0
+    else:
+      self.valid_blocks = valid_blocks
 
     self.rpys = np.tile(self.rpy, (INPUTS_WANTED, 1))
     self.wide_from_device_eulers = np.tile(self.wide_from_device_euler, (INPUTS_WANTED, 1))
@@ -139,10 +143,24 @@ class Calibrator:
     else:
       self.calib_spread = np.zeros(3)
 
-    self.valid_blocks = INPUTS_NEEDED
-    self.cal_status = log.LiveCalibrationData.Status.calibrated
+    if self.valid_blocks < INPUTS_NEEDED:
+      if self.cal_status == log.LiveCalibrationData.Status.recalibrating:
+        self.cal_status = log.LiveCalibrationData.Status.recalibrating
+      else:
+        self.cal_status = log.LiveCalibrationData.Status.uncalibrated
+    elif is_calibration_valid(self.rpy):
+      self.cal_status = log.LiveCalibrationData.Status.calibrated
+    else:
+      self.cal_status = log.LiveCalibrationData.Status.invalid
 
-    # Schreibzyklus für Params: Ignorieren reicht meist, aber so bleibt's erhalten
+    # If spread is too high, assume mounting was changed and reset to last block.
+    # Make the transition smooth. Abrupt transitions are not good for feedback loop through supercombo model.
+    # TODO: add height spread check with smooth transition too
+    spread_too_high = self.calib_spread[1] > MAX_ALLOWED_PITCH_SPREAD or self.calib_spread[2] > MAX_ALLOWED_YAW_SPREAD
+    if spread_too_high and self.cal_status == log.LiveCalibrationData.Status.calibrated:
+      self.reset(self.rpys[self.block_idx - 1], valid_blocks=1, smooth_from=self.rpy)
+      self.cal_status = log.LiveCalibrationData.Status.recalibrating
+
     write_this_cycle = (self.idx == 0) and (self.block_idx % (INPUTS_WANTED//5) == 5)
     if self.param_put and write_this_cycle:
       self.params.put_nonblocking("CalibrationParams", self.get_msg(True).to_bytes())
@@ -164,9 +182,49 @@ class Calibrator:
                             road_transform_trans_std: list[float]) -> np.ndarray | None:
     self.old_rpy_weight = max(0.0, self.old_rpy_weight - 1/SMOOTH_CYCLES)
 
-    # Die eigentliche Kalibrierung wird übersprungen, alles wird als gültig betrachtet!
+    straight_and_fast = ((self.v_ego > MIN_SPEED_FILTER) and (trans[0] > MIN_SPEED_FILTER) and (abs(rot[2]) < MAX_YAW_RATE_FILTER))
+    angle_std_threshold = MAX_VEL_ANGLE_STD
+    height_std_threshold = MAX_HEIGHT_STD
+    rpy_certain = np.arctan2(trans_std[1], trans[0]) < angle_std_threshold
+    if len(road_transform_trans_std) == 3:
+      height_certain = road_transform_trans_std[2] < height_std_threshold
+    else:
+      height_certain = True
+
+    certain_if_calib = (rpy_certain and height_certain) or (self.valid_blocks < INPUTS_NEEDED)
+    if not (straight_and_fast and certain_if_calib):
+      return None
+
+    observed_rpy = np.array([0,
+                             -np.arctan2(trans[2], trans[0]),
+                             np.arctan2(trans[1], trans[0])])
+    new_rpy = euler_from_rot(rot_from_euler(self.get_smooth_rpy()).dot(rot_from_euler(observed_rpy)))
+    new_rpy = sanity_clip(new_rpy)
+
+    if len(wide_from_device_euler) == 3:
+      new_wide_from_device_euler = np.array(wide_from_device_euler)
+    else:
+      new_wide_from_device_euler = WIDE_FROM_DEVICE_EULER_INIT
+
+    if (len(road_transform_trans) == 3):
+      new_height = np.array([road_transform_trans[2]])
+    else:
+      new_height = HEIGHT_INIT
+
+    self.rpys[self.block_idx] = moving_avg_with_linear_decay(self.rpys[self.block_idx], new_rpy, self.idx, float(BLOCK_SIZE))
+    self.wide_from_device_eulers[self.block_idx] = moving_avg_with_linear_decay(self.wide_from_device_eulers[self.block_idx],
+                                                                                new_wide_from_device_euler, self.idx, float(BLOCK_SIZE))
+    self.heights[self.block_idx] = moving_avg_with_linear_decay(self.heights[self.block_idx], new_height, self.idx, float(BLOCK_SIZE))
+
+    self.idx = (self.idx + 1) % BLOCK_SIZE
+    if self.idx == 0:
+      self.block_idx += 1
+      self.valid_blocks = max(self.block_idx, self.valid_blocks)
+      self.block_idx = self.block_idx % INPUTS_WANTED
+
     self.update_status()
-    return self.rpy
+
+    return new_rpy
 
   def get_msg(self, valid: bool) -> capnp.lib.capnp._DynamicStructBuilder:
     smooth_rpy = self.get_smooth_rpy()
@@ -175,11 +233,11 @@ class Calibrator:
     msg.valid = valid
 
     liveCalibration = msg.liveCalibration
-    liveCalibration.validBlocks = INPUTS_NEEDED
-    liveCalibration.calStatus = log.LiveCalibrationData.Status.calibrated
-    liveCalibration.calPerc = 100
+    liveCalibration.validBlocks = self.valid_blocks
+    liveCalibration.calStatus = self.cal_status
+    liveCalibration.calPerc = min(100 * (self.valid_blocks * BLOCK_SIZE + self.idx) // (INPUTS_NEEDED * BLOCK_SIZE), 100)
     liveCalibration.rpyCalib = smooth_rpy.tolist()
-    liveCalibration.rpyCalibSpread = np.zeros(3).tolist()
+    liveCalibration.rpyCalibSpread = self.calib_spread.tolist()
     liveCalibration.wideFromDeviceEuler = self.wide_from_device_euler.tolist()
     liveCalibration.height = self.height.tolist()
 
@@ -188,7 +246,7 @@ class Calibrator:
       liveCalibration.calStatus = log.LiveCalibrationData.Status.calibrated
       liveCalibration.calPerc = 100.
       liveCalibration.rpyCalib = [0, 0, 0]
-      liveCalibration.rpyCalibSpread = np.zeros(3).tolist()
+      liveCalibration.rpyCalibSpread = self.calib_spread.tolist()
 
     return msg
 
@@ -214,12 +272,15 @@ def main() -> NoReturn:
 
     if sm.updated['cameraOdometry']:
       calibrator.handle_v_ego(sm['carState'].vEgo)
-      calibrator.handle_cam_odom(sm['cameraOdometry'].trans,
-                                 sm['cameraOdometry'].rot,
-                                 sm['cameraOdometry'].wideFromDeviceEuler,
-                                 sm['cameraOdometry'].transStd,
-                                 sm['cameraOdometry'].roadTransformTrans,
-                                 sm['cameraOdometry'].roadTransformTransStd)
+      new_rpy = calibrator.handle_cam_odom(sm['cameraOdometry'].trans,
+                                           sm['cameraOdometry'].rot,
+                                           sm['cameraOdometry'].wideFromDeviceEuler,
+                                           sm['cameraOdometry'].transStd,
+                                           sm['cameraOdometry'].roadTransformTrans,
+                                           sm['cameraOdometry'].roadTransformTransStd)
+
+      if DEBUG and new_rpy is not None:
+        print('got new rpy', new_rpy)
 
     # 4Hz driven by cameraOdometry
     if sm.frame % 5 == 0:
