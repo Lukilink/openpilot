@@ -51,6 +51,9 @@ class CarState(CarStateBase):
     self.gvc = 0.0
     self.secoc_synchronization = None
 
+    # VW T3 retrofit (see README.md): the T3 is always fingerprinted as TOYOTA_COROLLA
+    self.t3_retrofit = CP.carFingerprint == CAR.TOYOTA_COROLLA
+
   def update(self, can_parsers) -> structs.CarState:
     cp = can_parsers[Bus.pt]
     cp_cam = can_parsers[Bus.cam]
@@ -96,8 +99,15 @@ class CarState(CarStateBase):
     ret.steeringRateDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_RATE"]
     torque_sensor_angle_deg = cp.vl["STEER_TORQUE_SENSOR"]["STEER_ANGLE"]
 
+    # VW T3 retrofit: the steering angle sensor is mounted upside down and 23 deg off center.
+    # Flip the sign and remove the offset (same as in the old fork, branch 084_OLD_CAR).
+    if self.t3_retrofit:
+      ret.steeringAngleDeg = -(ret.steeringAngleDeg + 23.)
+      ret.steeringRateDeg = -ret.steeringRateDeg
+
     # On some cars, the angle measurement is non-zero while initializing
-    if abs(torque_sensor_angle_deg) > 1e-3 and not bool(cp.vl["STEER_TORQUE_SENSOR"]["STEER_ANGLE_INITIALIZING"]):
+    # (never used on the T3: only the flipped STEER_ANGLE_SENSOR above is trusted)
+    if abs(torque_sensor_angle_deg) > 1e-3 and not bool(cp.vl["STEER_TORQUE_SENSOR"]["STEER_ANGLE_INITIALIZING"]) and not self.t3_retrofit:
       self.accurate_steer_angle_seen = True
 
     if self.accurate_steer_angle_seen:
@@ -197,6 +207,14 @@ class CarState(CarStateBase):
         self.distance_button = cp_acc.vl["ACC_CONTROL"]["DISTANCE"]
 
         buttonEvents += create_button_events(self.distance_button, prev_distance_button, {1: ButtonType.gapAdjustCruise})
+
+    # VW T3 retrofit: the distance button is wired to the MAIN-ECU,
+    # which reports it in the otherwise unused signal LIGHT_STALK->AUTO_HIGH_BEAM
+    if self.t3_retrofit:
+      prev_distance_button = self.distance_button
+      self.distance_button = int(cp.vl["LIGHT_STALK"]["AUTO_HIGH_BEAM"])
+
+      buttonEvents += create_button_events(self.distance_button, prev_distance_button, {1: ButtonType.gapAdjustCruise})
 
     ret.buttonEvents = buttonEvents
     return ret

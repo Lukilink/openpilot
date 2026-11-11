@@ -77,6 +77,10 @@ class Controls:
     lp = self.sm['vehicleParameters']
     x = max(lp.stiffnessFactor, 0.1)
     sr = max(lp.steerRatio, 0.1)
+    # VW T3 retrofit (see README.md): keep the steering ratio fixed like the old fork did (branch 084_OLD_CAR).
+    # The steering PID was tuned for this fixed value. Remove these two lines to use the learned ratio.
+    if self.CP.carFingerprint == "TOYOTA_COROLLA":
+      sr = self.CP.steerRatio
     self.VM.update_params(x, sr)
 
     steer_angle_without_offset = math.radians(CS.steeringAngleDeg - lp.angleOffsetDeg)

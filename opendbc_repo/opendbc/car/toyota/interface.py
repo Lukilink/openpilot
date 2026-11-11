@@ -81,6 +81,24 @@ class CarInterface(CarInterfaceBase):
       # TODO: Some of these platforms are not advertised to have full range ACC, do they really all have sng?
       stop_and_go = True
 
+    # *** VW T3 retrofit (see README.md) ***
+    # The T3 is always fingerprinted as TOYOTA_COROLLA (FINGERPRINT in launch_env.sh).
+    # Vehicle values and lateral tuning are taken over from the old fork (branch 084_OLD_CAR).
+    if candidate == CAR.TOYOTA_COROLLA:
+      # the brake actuator holds the T3 at standstill, the MAIN-ECU decides when cruise can be engaged
+      stop_and_go = True
+
+      ret.wheelbase = 2.455
+      ret.steerRatio = 14.
+
+      # steering PID from the old fork instead of the Corolla torque tune
+      ret.lateralTuning.init('pid')
+      ret.lateralTuning.pid.kpBP = [0.]
+      ret.lateralTuning.pid.kiBP = [0.]
+      ret.lateralTuning.pid.kpV = [0.7]
+      ret.lateralTuning.pid.kiV = [0.01]
+      ret.lateralTuning.pid.kf = 0.00007818594
+
     ret.centerToFront = ret.wheelbase * 0.44
 
     # TODO: Some TSS-P platforms have BSM, but are flipped based on region or driving direction.
@@ -101,9 +119,12 @@ class CarInterface(CarInterfaceBase):
     #  - TSS2 cars with camera sending ACC_CONTROL where we can block it
     # openpilot longitudinal behind alpha long toggle:
     #  - TSS2 radar ACC cars (disables radar)
+    # VW T3 retrofit:
+    #  - the T3 has no DSU and no stock ACC, the GAS-ECU and BRAKE-ECU follow ACC_CONTROL from openpilot
 
     ret.openpilotLongitudinalControl = ((bool(ret.flags & ToyotaFlags.TSS2) and not (ret.flags & ToyotaFlags.RADAR_ACC)) or
-                                        bool(ret.flags & ToyotaFlags.DISABLE_RADAR.value))
+                                        bool(ret.flags & ToyotaFlags.DISABLE_RADAR.value) or
+                                        candidate == CAR.TOYOTA_COROLLA)
 
     ret.autoResumeSng = ret.openpilotLongitudinalControl
 

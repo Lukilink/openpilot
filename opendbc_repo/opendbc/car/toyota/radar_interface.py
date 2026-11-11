@@ -2,7 +2,7 @@
 from opendbc.can import CANParser
 from opendbc.car import Bus
 from opendbc.car.structs import RadarData
-from opendbc.car.toyota.values import DBC, ToyotaFlags
+from opendbc.car.toyota.values import CAR, DBC, ToyotaFlags
 from opendbc.car.interfaces import RadarInterfaceBase
 
 
@@ -60,6 +60,11 @@ class RadarInterface(RadarInterfaceBase):
       ret.errors.canError = True
 
     if self.rcp.vl['STATUS_MSG']['RADAR_STATUS'] != 1 or self.rcp.vl['STATUS_MSG']['RADAR_PRE_FAULT'] != 0:
+      if self.CP.carFingerprint == CAR.TOYOTA_COROLLA:
+        # VW T3 retrofit (see README.md): the radar is optional. While it reports "not ready",
+        # drop all radar points and keep driving with the camera only instead of blocking openpilot.
+        self.pts.clear()
+        return ret
       ret.errors.radarUnavailableTemporary = True
 
     for ii in sorted(updated_messages):

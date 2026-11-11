@@ -20,3 +20,7 @@ if [ -z "$AGNOS_VERSION" ]; then
 fi
 
 export STAGING_ROOT="/data/safe_staging"
+
+# VW T3 retrofit (see README.md): always start as a Toyota Corolla 2017.
+# The T3 has no Toyota engine/ABS/camera ECUs that could answer the firmware query.
+export FINGERPRINT="TOYOTA_COROLLA"
